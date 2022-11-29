@@ -15,4 +15,4 @@ RUN pip install -r ${HOME}/requirements.txt
 
 COPY --chown=worker:worker . ${HOME}
 
-ENTRYPOINT ["/usr/local/bin/python", "validate.py"]
+ENTRYPOINT ["/usr/local/bin/python", "/home/worker/validate.py"]
