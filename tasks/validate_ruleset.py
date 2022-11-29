@@ -1,4 +1,5 @@
 import yaml
+
 try:
     from yaml import CLoader as Loader
 except ImportError:
@@ -7,90 +8,96 @@ except ImportError:
 from common import check_duplicate_numbers, check_firewall_rule
 
 
+def check_ruleset(ruleset, file_infos, afi) -> int:
+    fail = 0
+    if (name := ruleset.get("name")) is None:
+        print(f'  Invalid "ruleset"={name}')
+        fail = 1
+    if (default_action := ruleset.get("default_action")) is None or \
+            default_action not in ["accept", "drop", "reject"]:
+        fail = 1
+        print(f'  Invalid "default_action"={default_action and "none"}')
+    if (enable_default_log := ruleset.get("enable_default_log")) and \
+            enable_default_log not in [True, False]:
+        fail = 1
+        print(f'  Invalid "enable_default_log"={enable_default_log}')
+    if "rules" not in ruleset:
+        print(f'  rules key does not exists in ruleset {ruleset}')
+        return 1
+    rules = ruleset["rules"]
+    # TODO for rest
+    if not rules:
+        return 0
+    # handle VLANxxx-IN interfaces (dynamic configured using host_vars)
+    if isinstance(rules, str):
+        return 0
+    fail = max(fail, check_duplicate_numbers(name, rules))
+    if name.startswith("WG100-IN"):
+        for rule in rules:
+            fail = max(fail, check_firewall_rule(file_infos["site"], afi, name, rule))
+    return fail
+
+
 # https://docs.ansible.com/ansible/latest/collections/vyos/vyos/vyos_firewall_rules_module.html
-def check_fw_rules(file_infos, json: dict):
-    ok = 1
+def check_fw_rules(file_infos, json: dict) -> int:
+    fail = 0
     # check which state the action should use (only one per step)
     if (state := json.get("state")) is None or \
             state not in ["merged", "replaced", "overridden", "deleted", "gathered", "rendered", "parsed"]:
         print(f'  Invalid state={state or "none"}')
-        ok = 0
+        fail = 1
 
     # the config parameter must be included, otherwise this step isn't functional
     if (config := json.get("config")) is None:
-        print('  "config" not found')
-        return False
+        print(f'  "config" not found')
+        return 1
 
     # check each configured address family (can only be configured one time)
     afis = set()
     for entry in config:
         if (afi := entry.get("afi")) is None or afi not in {"ipv4", "ipv6"} or afi in afis:
             print(f' Invalid afi={afi or "none"}')
-        ok = 0
+        fail = 1
         afis.add(afi)
 
         if (rule_sets := entry.get("rule_sets")) is None:
             print('  "rule_sets" not found')
-            return False
+            return 1
         for ruleset in rule_sets:
-            if (name := ruleset.get("name")) is None:
-                print(f'  Invalid "ruleset"={name}')
-                ok = 0
-            if (default_action := ruleset.get("default_action")) is None or \
-                    default_action not in ["accept", "drop", "reject"]:
-                ok = 0
-                print(f'  Invalid "default_action"={default_action and "none"}')
-            if (enable_default_log := ruleset.get("enable_default_log")) and \
-                    enable_default_log not in [True, False]:
-                ok = 0
-                print(f'  Invalid "enable_default_log"={enable_default_log}')
-            if "rules" not in ruleset:
-                print('  rules key does not exists')
-                return False
-            rules = ruleset["rules"]
-            # TODO for rest
-            if not rules:
-                continue
-            # handle VLANxxx-IN interfaces (dynamic configured using host_vars)
-            if isinstance(rules, str):
-                continue
-            ok = min(ok, check_duplicate_numbers(name, rules))
-            if name.startswith("WG100-IN"):
-                for rule in rules:
-                    ok = min(ok, check_firewall_rule(file_infos["site"], afi, name, rule))
-    return ok
+            fail = max(fail, check_ruleset(ruleset, file_infos, afi))
+    return fail
 
 
 # https://docs.ansible.com/ansible/latest/collections/vyos/vyos/vyos_prefix_lists_module.html
-def check_prefix_lists(file_infos, json: dict):
-    return True
+def check_prefix_lists(file_infos, json: dict) -> int:
+    return 0
 
 
 # https://docs.ansible.com/ansible/latest/collections/vyos/vyos/vyos_logging_global_module.html
-def check_logging(file_infos, json: dict):
-    return True
+def check_logging(file_infos, json: dict) -> int:
+    return 0
 
 
 # https://docs.ansible.com/ansible/latest/collections/vyos/vyos/vyos_config_module.html
-def check_generic_commands(file_infos, json: dict):
-    return True
+def check_generic_commands(file_infos, json: dict) -> int:
+    return 0
 
 
 # https://docs.ansible.com/ansible/latest/collections/vyos/vyos/vyos_firewall_global_module.html
-def check_fw_global(file_infos, json: dict):
-    return True
+def check_fw_global(file_infos, json: dict) -> int:
+    return 0
 
 
-def main(file_infos):
+def check(file_infos) -> int:
     """
     Method to check files in the tasks directory, these contain all firewall
      rules except for the VLANxxx-IN rulesets, which are using by the wireguard
      client peer interfaces (wg100).
-    :param filepath: filename of one specific file in the host_vars directory
+    :param file_infos: infos for file to check
     :return: a boolean which indicates whether this validator has found any issues
               (True means no issues found, False indicates that we found issues)
     """
-    ok = 1
+    fail = 0
     with open(file_infos["path"]) as f:
         json = yaml.load(f, Loader)
     if not json:
@@ -104,13 +111,13 @@ def main(file_infos):
     #  - vyos_firewall_global (to set static firewall groups)
     for dictio in json:
         if rules := dictio.get("vyos.vyos.vyos_firewall_rules"):
-            ok = min(ok, check_fw_rules(file_infos, rules))
+            fail = max(fail, check_fw_rules(file_infos, rules))
         elif rules := dictio.get("vyos.vyos.vyos_firewall_global"):
-            ok = min(ok, check_fw_global(file_infos, rules))
+            fail = max(fail, check_fw_global(file_infos, rules))
         elif rules := dictio.get("vyos.vyos.vyos_prefix_lists"):
-            ok = min(ok, check_prefix_lists(file_infos, rules))
+            fail = max(fail, check_prefix_lists(file_infos, rules))
         elif rules := dictio.get("vyos.vyos.vyos_logging_global"):
-            ok = min(ok, check_logging(file_infos, rules))
+            fail = max(fail, check_logging(file_infos, rules))
         elif rules := dictio.get("vyos.vyos.vyos_config"):
-            ok = min(ok, check_generic_commands(file_infos, rules))
-    return ok
+            fail = max(fail, check_generic_commands(file_infos, rules))
+    return fail
