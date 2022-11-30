@@ -34,10 +34,10 @@ def check_duplicate_numbers(name: str, rules: list[dict], key_name: str = "numbe
 
 def check_cidr(cidr: str, cidr_max: int) -> int:
     if not cidr.isnumeric():
-        print("  ")  # TODO (nicht numerische cidr)
+        print(f"  Invalid netmask = {cidr}")
         return 1
     if not 0 <= int(cidr) <= cidr_max:
-        print("  ")  # TODO (cidr out of range)
+        print(f"  Invalid ip address = {ip} (netmask out of allowed range")
         return 1
     return 0
 
@@ -46,14 +46,14 @@ def check_ipv4(ip: str) -> int:
     fail = 0
     blocks = ip.split(".")
     if len(blocks) != 4:
-        print("  ")  # TODO (falsche anzahl blöcke)
+        print(f"  Invalid ipv4 address = {ip} (amount of octets)")
         return 1
     for block in blocks:
         if not block.isnumeric():
-            print("  ")  # TODO (ipv4 block nicht numerisch)
+            print(f"  Invalid ipv4 address = {ip} (octet does not only contain numbers)")
             return 1
         if not 0 <= int(block) <= 255:
-            print("  ")  # TODO (ipv4 block out of range)
+            print(f"  Invalid ipv4 address = {ip} (octet > 255)")
             return 1
     return fail
 
@@ -62,21 +62,21 @@ def check_ipv6(ip: str) -> int:
     allowed_chars = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f"}
     blocks = list(filter(None, ip.split(":")))
     if len(blocks) > 8:
-        print("  ")  # TODO (zu viele blöcke)
+        print(f"  Invalid ipv6 address = {ip} (too many blocks)")
         return 1
     if len(findall(r"(?=(::))", ip)) > 1:
-        print("  ")  # TODO (mehrmals "::" verwendet)
+        print(f"  Invalid ipv6 address = {ip} (multiple ::)")
         return 1
     if ip[0] == ":" and ip[1] != ":" or \
             ip[-1] == ":" and ip[-2] != ":":
-        print("  ")  # TODO (fängt mit einem einzelnen ":" and oder endet mit einem einzelnen ":")
+        print(f"  Invalid ipv6 address = {ip} (invalid format, begins or end with single :)")
         return 1
     for block in blocks:
         if len(block) > 4:
-            print("  ")  # TODO (block ist länger als 4 zeichen)
+            print(f"  Invalid ipv6 address = {ip} (block > ffff")
             return 1
         if len(set(block.lower()).difference(allowed_chars)) > 0:
-            print("  ")  # TODO (falsche zeichen in ipv6 block)
+            print(f"  Invalid ipv6 address = {ip} (block contains other chars than hex")
             return 1
     return 0
 
@@ -84,14 +84,14 @@ def check_ipv6(ip: str) -> int:
 def check_ip(ip: str, require_cidr: bool = False) -> int:
     fail = 0
     if not isinstance(ip, str) or len(ip) == 0:
-        print("  ")  # TODO (None oder leerer String)
+        print("  Invalid ip address (empty)")
         return 1
     split = ip.split("/")
     if len(split) > 2:
-        print("  ")  # TODO (mehr als ein "/")
+        print(f"  Invalid ip address = {ip} (multiple netmasks")
         return 1
     if len(split) == 2 and not require_cidr:
-        print("  ")  # TODO (kein cidr erlaubt)
+        print(f"  Invalid ip address = {ip} (netmask not allowed")
         return 1
 
     if ":" in ip:
@@ -102,10 +102,10 @@ def check_ip(ip: str, require_cidr: bool = False) -> int:
         cidr_max = 32
 
     if len(split) < 2 and require_cidr:
-        print("  ")  # TODO (cidr fehlt bei _net oder _vpn)
+        print(f"  Invalid ip address = {ip} (netmask required")
     if len(split) == 2:
         if split[1] == "":
-            print("  ")  # TODO (cidr fehlt)
+            print(f"  Invalid ip address = {ip} (netmask incomplete)")
         fail += check_cidr(split[1], cidr_max)
     return fail
 

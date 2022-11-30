@@ -72,7 +72,7 @@ def traverse_dict(path: str, dictio: dict) -> tuple[int, list[str]]:
             lst += ret[1]
         else:
             if path[:2] == "v6" and path.count(".") == 1:
-                print("  ")  # TODO (ipv6 für device gesetzt)
+                print(f"  Invalid configuration ipv6 address={ip} configured on device, make it a named address")
                 fail = 1
             require_cidr = any(f in key for f in ["_vpn", "_net"])
             fail += check_ip(value, require_cidr)
@@ -88,7 +88,7 @@ def check_hosts() -> int:
         json = yaml.load(f, Loader)
     print("Checking hosts.yml")
     if (dictio := json.get("all", {}).get("vars", {})) is None:
-        print("")  # TODO (keine vars in hosts.yml)
+        print(f"  Invalid hosts.yaml, no vars defined.")
         return 1
     for afi in ["v4", "v6"]:
         if (hosts := dictio.get(afi)) is None:
@@ -106,6 +106,6 @@ def main() -> int:
 
 if __name__ == '__main__':
     num_errors = main()
-    print("")  # TODO ("num_errors" fehler wurden gefunden)
+    print("\nWe found a total of {num_errors} errors!!!")
     # use the exit status to indicate whether the validator found issues
     exit(max(1, num_errors))
