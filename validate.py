@@ -1,13 +1,23 @@
 from importlib import __import__
 from os import environ
+from common import check_ip
+import yaml
 from pathlib import Path
+
+try:
+    from yaml import CLoader as Loader
+except ImportError:
+    from yaml import Loader
+
+valid_hosts: list[str] = []
+p = Path(environ.get("REPO_DIR"))
 
 
 def check_file(file_infos, file, p) -> int:
     fail = 0
     print(f"Checking {file.relative_to(Path(p))}")
     parent = Path(file_infos["parent_name"])
-    # loop through all programs for the file in it's directory
+    # loop through all programs for the file in its directory
     #  (tasks have other validators than host_vars)
     for prog in parent.glob('**/*'):
         # only accept validators written in python, ignore the init file
@@ -16,13 +26,12 @@ def check_file(file_infos, file, p) -> int:
         name = prog.name.rstrip('.py')
         module = __import__(f"{parent.name}.{name}")
         if getattr(getattr(module, name), "check", None):
-            fail = max(fail, getattr(module, name).check(file_infos))
+            fail += getattr(module, name).check(file_infos)
     return fail
 
 
-def main() -> int:
+def check_files() -> int:
     fail = 0
-    p = Path(environ.get("REPO_DIR"))
     for file in p.rglob('*'):
         # find all files that should be checked
         if not (file.is_file() and (file.name.endswith("yaml") or file.name.endswith("yml"))):
@@ -48,11 +57,55 @@ def main() -> int:
         file_infos["name"] = file.name
         file_infos["parent_name"] = parent_name
 
-        fail = max(fail, check_file(file_infos, file, p))
+        fail += check_file(file_infos, file, p)
 
-    # use the exit status to indicate whether the validator found issues
     return fail
 
 
+def traverse_dict(path: str, dictio: dict) -> tuple[int, list[str]]:
+    lst: list[str] = []
+    fail = 0
+    for key, value in dictio.items():
+        if isinstance(value, dict):
+            ret = traverse_dict(f"{path}.{key}", value)
+            fail += ret[0]
+            lst += ret[1]
+        else:
+            if path[:2] == "v6" and path.count(".") == 1:
+                print("  ")  # TODO (ipv6 für device gesetzt)
+                fail = 1
+            require_cidr = any(f in key for f in ["_vpn", "_net"])
+            fail += check_ip(value, require_cidr)
+            lst += [f"{path}.{key}"]
+    return fail, lst
+
+
+def check_hosts() -> int:
+    global valid_hosts
+    fail = 0
+    lst: list[str] = []
+    with open(p.joinpath("hosts.yml")) as f:
+        json = yaml.load(f, Loader)
+    print("Checking hosts.yml")
+    if (dictio := json.get("all", {}).get("vars", {})) is None:
+        print("")  # TODO (keine vars in hosts.yml)
+        return 1
+    for afi in ["v4", "v6"]:
+        if (hosts := dictio.get(afi)) is None:
+            continue
+        ret = traverse_dict(afi, hosts)
+        fail += ret[0]
+        lst += ret[1]
+    valid_hosts = lst
+    return fail
+
+
+def main() -> int:
+    return check_hosts() + check_files()
+
+
 if __name__ == '__main__':
-    exit(main())
+    num_errors = main()
+    print("")  # TODO ("num_errors" fehler wurden gefunden)
+    # use the exit status to indicate whether the validator found issues
+    exit(max(1, num_errors))

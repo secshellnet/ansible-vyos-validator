@@ -31,10 +31,10 @@ def check_ruleset(ruleset, file_infos, afi) -> int:
     # handle VLANxxx-IN interfaces (dynamic configured using host_vars)
     if isinstance(rules, str):
         return 0
-    fail = max(fail, check_duplicate_numbers(name, rules))
+    fail += check_duplicate_numbers(name, rules)
     if name.startswith("WG100-IN"):
         for rule in rules:
-            fail = max(fail, check_firewall_rule(file_infos["site"], afi, name, rule))
+            fail += check_firewall_rule(file_infos["site"], afi, name, rule)
     return fail
 
 
@@ -49,7 +49,7 @@ def check_fw_rules(file_infos, json: dict) -> int:
 
     # the config parameter must be included, otherwise this step isn't functional
     if (config := json.get("config")) is None:
-        print(f'  "config" not found')
+        print(f'  "config" not found in {file_infos["name"]}')
         return 1
 
     # check each configured address family (can only be configured one time)
@@ -64,7 +64,7 @@ def check_fw_rules(file_infos, json: dict) -> int:
             print('  "rule_sets" not found')
             return 1
         for ruleset in rule_sets:
-            fail = max(fail, check_ruleset(ruleset, file_infos, afi))
+            fail += check_ruleset(ruleset, file_infos, afi)
     return fail
 
 
@@ -111,13 +111,13 @@ def check(file_infos) -> int:
     #  - vyos_firewall_global (to set static firewall groups)
     for dictio in json:
         if rules := dictio.get("vyos.vyos.vyos_firewall_rules"):
-            fail = max(fail, check_fw_rules(file_infos, rules))
+            fail += check_fw_rules(file_infos, rules)
         elif rules := dictio.get("vyos.vyos.vyos_firewall_global"):
-            fail = max(fail, check_fw_global(file_infos, rules))
+            fail += check_fw_global(file_infos, rules)
         elif rules := dictio.get("vyos.vyos.vyos_prefix_lists"):
-            fail = max(fail, check_prefix_lists(file_infos, rules))
+            fail += check_prefix_lists(file_infos, rules)
         elif rules := dictio.get("vyos.vyos.vyos_logging_global"):
-            fail = max(fail, check_logging(file_infos, rules))
+            fail += check_logging(file_infos, rules)
         elif rules := dictio.get("vyos.vyos.vyos_config"):
-            fail = max(fail, check_generic_commands(file_infos, rules))
+            fail += check_generic_commands(file_infos, rules)
     return fail

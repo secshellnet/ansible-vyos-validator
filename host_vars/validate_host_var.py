@@ -25,5 +25,5 @@ def check(file_infos) -> int:
         for ruleset, rules in fam_value.items():
             if not rules:
                 continue
-            fail = max(fail, check_duplicate_numbers(ruleset, rules))
+            fail += check_duplicate_numbers(ruleset, rules)
     return fail
