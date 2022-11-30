@@ -106,6 +106,6 @@ def main() -> int:
 
 if __name__ == '__main__':
     num_errors = main()
-    print("\nWe found a total of {num_errors} errors!!!")
+    print(f"\nWe found a total of {num_errors} errors!!!")
     # use the exit status to indicate whether the validator found issues
     exit(max(1, num_errors))
