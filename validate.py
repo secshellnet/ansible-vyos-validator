@@ -72,7 +72,7 @@ def traverse_dict(path: str, dictio: dict) -> tuple[int, list[str]]:
             lst += ret[1]
         else:
             if path[:2] == "v6" and path.count(".") == 1:
-                print(f"  Invalid configuration ipv6 address={ip} configured on device, make it a named address")
+                print(f"  Invalid configuration ipv6 address={value} configured on device, make it a named address")
                 fail = 1
             require_cidr = any(f in key for f in ["_vpn", "_net"])
             fail += check_ip(value, require_cidr)
