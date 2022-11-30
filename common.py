@@ -3,6 +3,7 @@ from re import findall
 
 saved_names: dict[tuple[str, str], list[str]] = {}
 
+
 def check_duplicate_numbers(name: str, rules: list[dict], key_name: str = "number") -> int:
     """
     This method loops through all rules and stores it's number into a list.
@@ -37,7 +38,7 @@ def check_cidr(cidr: str, cidr_max: int) -> int:
         print(f"  Invalid netmask = {cidr}")
         return 1
     if not 0 <= int(cidr) <= cidr_max:
-        print(f"  Invalid ip address = {ip} (netmask out of allowed range")
+        print(f"  Invalid netmask = {cidr} (netmask out of allowed range")
         return 1
     return 0
 

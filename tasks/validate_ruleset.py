@@ -12,25 +12,25 @@ def check_ruleset(ruleset, file_infos, afi) -> int:
     fail = 0
     if (name := ruleset.get("name")) is None:
         print(f'  Invalid "ruleset"={name}')
-        fail = 1
+        fail += 1
     if (default_action := ruleset.get("default_action")) is None or \
             default_action not in ["accept", "drop", "reject"]:
-        fail = 1
+        fail += 1
         print(f'  Invalid "default_action"={default_action and "none"}')
     if (enable_default_log := ruleset.get("enable_default_log")) and \
             enable_default_log not in [True, False]:
-        fail = 1
+        fail += 1
         print(f'  Invalid "enable_default_log"={enable_default_log}')
     if "rules" not in ruleset:
         print(f'  rules key does not exists in ruleset {ruleset}')
-        return 1
+        return fail
     rules = ruleset["rules"]
     # TODO for rest
     if not rules:
-        return 0
+        return fail
     # handle VLANxxx-IN interfaces (dynamic configured using host_vars)
     if isinstance(rules, str):
-        return 0
+        return fail
     fail += check_duplicate_numbers(name, rules)
     if name.startswith("WG100-IN"):
         for rule in rules:
@@ -50,19 +50,19 @@ def check_fw_rules(file_infos, json: dict) -> int:
     # the config parameter must be included, otherwise this step isn't functional
     if (config := json.get("config")) is None:
         print(f'  "config" not found in {file_infos["name"]}')
-        return 1
+        return fail
 
     # check each configured address family (can only be configured one time)
     afis = set()
     for entry in config:
         if (afi := entry.get("afi")) is None or afi not in {"ipv4", "ipv6"} or afi in afis:
             print(f' Invalid afi={afi or "none"}')
-        fail = 1
+            fail = 1
         afis.add(afi)
 
         if (rule_sets := entry.get("rule_sets")) is None:
             print('  "rule_sets" not found')
-            return 1
+            return fail
         for ruleset in rule_sets:
             fail += check_ruleset(ruleset, file_infos, afi)
     return fail
@@ -101,7 +101,7 @@ def check(file_infos) -> int:
     with open(file_infos["path"]) as f:
         json = yaml.load(f, Loader)
     if not json:
-        return True
+        return 0
 
     # full list of actions can be found here
     #  https://docs.ansible.com/ansible/latest/collections/vyos/vyos/index.html

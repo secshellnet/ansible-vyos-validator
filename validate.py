@@ -88,7 +88,7 @@ def check_hosts() -> int:
         json = yaml.load(f, Loader)
     print("Checking hosts.yml")
     if (dictio := json.get("all", {}).get("vars", {})) is None:
-        print(f"  Invalid hosts.yaml, no vars defined.")
+        print("  Invalid hosts.yaml, no vars defined.")
         return 1
     for afi in ["v4", "v6"]:
         if (hosts := dictio.get(afi)) is None:
