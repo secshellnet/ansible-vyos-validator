@@ -11,8 +11,6 @@
       - "set nat destination rule 100 protocol tcp"
       - "set nat destination rule 100 translation address {{ v4.example.app1 }}"
 
-
-
 - name: "Configure wan firewall ruleset (ipv4)"
   vyos.vyos.vyos_firewall_rules:
     state: replaced
