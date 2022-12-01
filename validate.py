@@ -26,7 +26,7 @@ def check_file(file_infos, file, p) -> int:
         name = prog.name.rstrip('.py')
         module = __import__(f"{parent.name}.{name}")
         if getattr(getattr(module, name), "check", None):
-            fail += getattr(module, name).check(file_infos)
+            fail += getattr(module, name).check(file_infos, valid_hosts)
     return fail
 
 
@@ -88,7 +88,7 @@ def check_hosts() -> int:
         json = yaml.load(f, Loader)
     print("Checking hosts.yml")
     if (dictio := json.get("all", {}).get("vars", {})) is None:
-        print(f"  Invalid hosts.yaml, no vars defined.")
+        print("  Invalid hosts.yaml, no vars defined.")
         return 1
     for afi in ["v4", "v6"]:
         if (hosts := dictio.get(afi)) is None:
@@ -108,4 +108,4 @@ if __name__ == '__main__':
     num_errors = main()
     print(f"\nWe found a total of {num_errors} errors!!!")
     # use the exit status to indicate whether the validator found issues
-    exit(max(1, num_errors))
+    exit(min(1, num_errors))

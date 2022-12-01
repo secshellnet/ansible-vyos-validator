@@ -1,7 +1,8 @@
 import requests
-from re import findall
+from re import findall, match
 
 saved_names: dict[tuple[str, str], list[str]] = {}
+
 
 def check_duplicate_numbers(name: str, rules: list[dict], key_name: str = "number") -> int:
     """
@@ -37,7 +38,7 @@ def check_cidr(cidr: str, cidr_max: int) -> int:
         print(f"  Invalid netmask = {cidr}")
         return 1
     if not 0 <= int(cidr) <= cidr_max:
-        print(f"  Invalid ip address = {ip} (netmask out of allowed range")
+        print(f"  Invalid netmask = {cidr} (netmask out of allowed range")
         return 1
     return 0
 
@@ -110,23 +111,64 @@ def check_ip(ip: str, require_cidr: bool = False) -> int:
     return fail
 
 
-def check_firewall_rule(site: str, afi: str, ruleset_name: str, rule: dict) -> int:
+def check_rules_of_ruleset(file_infos: dict, afi: str, ruleset_name: str, rules: list[dict], valid_hosts,
+                           is_extension: bool = False):
     """
     A method to validate a firewall rule.
-    :param site: The site for which this ruleset has been defined (required to get existing source groups from wpm)
+    :param file_infos: filename and other useful information
     :param afi: Address family of the ruleset (required to get existing source-groups based on ipv4 or ipv6)
     :param ruleset_name: name of ruleset in case of error
-    :param rule: the rule object to be validated
+    :param rules: the rules to be validated
+    :param valid_hosts: all hosts which are allowed in jinja patterns
+    :param is_extension: ignore non-existing values, because this ruleset extends another one
     :return: an int which indicates whether this validator has found any issues
               (0 means no issues found, 1 indicates that we found issues)
     """
-    if not ruleset_name.startswith("WG100-IN"):
-        print(f'  Ruleset "{ruleset_name}" won\'t be handled by the check_firewall_rule method')
-        return 0
-    numbers = rule.get("number")
-    if (ag := rule.get("source", {}).get("group", {}).get("address_group")) is not None:
-        return check_source_group(site, afi, ag, numbers, ruleset_name)
-    return 0
+    fail = 0
+    fail += check_duplicate_numbers(ruleset_name, rules)
+    for rule in rules:
+        number = rule.get("number")
+        if ruleset_name.startswith("WG100-IN"):
+            if (ag := rule.get("source", {}).get("group", {}).get("address_group")) is not None:
+                fail += check_source_group(file_infos["site"], afi, ag, number, ruleset_name)
+        for key in ["source", "destination"]:
+            if (value := rule.get(key, {}).get("address")) is not None:
+                m = match(r"{{ ?(\S*)(( \+ '(/\d{0,3})' )|.*)? ?}}", value)
+                if m:
+                    if not any([f in m.groups()[0] for f in ["_vpn", "_net"]]) and m.groups()[3] is None:
+                        print(f"  Missing cidr for address in ruleset {ruleset_name} rule {number}")
+                        fail += 1
+                    if m.groups()[0] not in valid_hosts:
+                        print(f"  \"{m.groups()[0]}\" not found in hosts.yml (ruleset {ruleset_name} rule {number}")
+                        fail += 1
+        fail += check_firewall_rule(rule, ruleset_name, number, is_extension)
+    return fail
+
+
+def check_firewall_rule(rule: dict, ruleset_name: str, number: int, is_extension: bool = False) -> int:
+    """
+    A method to validate a firewall rule.
+    :param ruleset_name: name of ruleset in case of error
+    :param rule: the rule object to be validated
+    :param number: number of rule in ruleset
+    :param is_extension: ignore non-existing values, because this ruleset extends another one
+    :return: an int which indicates whether this validator has found any issues
+              (0 means no issues found, 1 indicates that we found issues)
+    """
+    fail = 0
+    if not is_extension and ((action := rule.get("action")) is None or
+                             action not in ["accept", "drop", "reject", "inspect"]):
+        fail += 1
+        print(f'  Invalid "action"={action and "none"} in ruleset {ruleset_name} rule {number}')
+    if states := rule.get("state"):
+        for name, value in states.items():
+            if name not in ["invalid", "related", "established", "new"]:
+                print(f"  Invalid state={name} in ruleset {ruleset_name} rule {number}")
+                fail += 1
+            if value not in [True, False]:
+                print(f"  Invalid state value={value} in ruleset {ruleset_name} rule {number}")
+                fail += 1
+    return fail
 
 
 def check_source_group(site: str, afi: str, source_group_name: dict, rule_number: str, ruleset_name: str) -> int:

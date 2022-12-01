@@ -5,13 +5,14 @@ try:
 except ImportError:
     from yaml import Loader
 
-from common import check_duplicate_numbers
+from common import check_rules_of_ruleset
 
 
-def check(file_infos) -> int:
+def check(file_infos, valid_hosts, **kwargs) -> int:
     """
     Method to check files in the host_vars directory, these contain the firewall rules for the VLANxxx-IN interfaces.
     :param file_infos: infos for file to check
+    :param valid_hosts: all hosts which are allowed in jinja patterns
     :return: an int which indicates whether this validator has found any issues
               (0 means no issues found, 1 indicates that we found issues)
     """
@@ -25,5 +26,6 @@ def check(file_infos) -> int:
         for ruleset, rules in fam_value.items():
             if not rules:
                 continue
-            fail += check_duplicate_numbers(ruleset, rules)
+            fail += check_rules_of_ruleset(file_infos, "None", ruleset, rules, valid_hosts,
+                                           ruleset not in ["all", "all6"])
     return fail
