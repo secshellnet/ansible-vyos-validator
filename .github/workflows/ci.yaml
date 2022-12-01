@@ -26,6 +26,7 @@ jobs:
         id: pip-cache
         run: |
           echo "::set-output name=dir::$(pip cache dir)"
+
       - name: pip cache
         uses: actions/cache@v3
         with:
@@ -33,10 +34,12 @@ jobs:
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip
+
       - name: Install flake8
         run: |
           python -m pip install --upgrade pip
           pip install flake8
+
       - name: Lint with flake8
         run: |
           # stop the build if there are Python syntax errors or undefined names
@@ -44,8 +47,41 @@ jobs:
           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
-  docker:
+  verify:
     needs: [ lint ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Verify against example
+        run: |
+          REPO_DIR=example python3 validate.py
+
+  docker:
+    needs: [ verify ]
     runs-on: ubuntu-latest
     permissions:
       packages: write
@@ -106,3 +142,4 @@ jobs:
         run: |
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
