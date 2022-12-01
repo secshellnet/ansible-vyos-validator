@@ -1,0 +1,63 @@
+---
+fw_ruleset_vlanxxx:
+  all:
+    - number: 5
+      action: accept
+      destination:
+        group:
+          network_group: "!NET-PRIVATE"
+
+    - number: 6
+      action: accept
+      state:
+        established: true
+        related: true
+
+    - number: 10
+      action: accept
+      destination:
+        address: "{{ v4.example.app1 + '/32' }}"
+        port: 443
+      protocol: tcp
+
+  VLAN10_IN:
+    - number: 100
+      action: accept
+      destination:
+        address: "{{ v4.example.app2 + '/32' }}"
+        port: 1234
+      protocol: tcp
+
+  VLAN11_IN:
+
+
+fw_ruleset_vlanxxx6:
+  all6:
+    - number: 5
+      action: accept
+      destination:
+        group:
+          network_group: "!NET-PRIVATE-6"
+
+    - number: 6
+      action: accept
+      state:
+        established: true
+        related: true
+
+    - number: 10
+      action: accept
+      destination:
+        address: "{{ v6.example.app1.adr1 + '/128' }}"
+        port: 443
+      protocol: tcp
+
+  VLAN10_IN6:
+    - number: 100
+      action: accept
+      destination:
+        address: "{{ v6.example.app2.apps + '/128' }}"
+        port: 1234
+      protocol: tcp
+
+  VLAN11_IN6:

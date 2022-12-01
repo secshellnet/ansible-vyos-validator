@@ -1,0 +1,31 @@
+---
+- name: "Configure wg100 firewall ruleset (ipv6)"
+  vyos.vyos.vyos_firewall_rules:
+    state: replaced
+    config:
+      - afi: ipv6
+        rule_sets:
+          - name: WG100-IN-6
+            description: Example for secshellnet/ansible-vyos-validator
+            default_action: reject
+            enable_default_log: true
+            rules:
+              - number: 5
+                action: accept
+                destination:
+                  group:
+                    network_group: "!NET-PRIVATE-6"
+
+              - number: 6
+                action: accept
+                state:
+                  established: true
+                  related: true
+
+              ### FIREWALL RULES ###
+              - number: 100
+                action: accept
+                destination:
+                  address: "{{ v6.example.mgnt.host + '/128' }}"
+                  port: 1234
+                protocol: tcp

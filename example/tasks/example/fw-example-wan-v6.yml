@@ -1,0 +1,29 @@
+---
+- name: "Configure wan firewall ruleset (ipv6)"
+  vyos.vyos.vyos_firewall_rules:
+    state: replaced
+    config:
+      - afi: ipv6
+        rule_sets:
+          - name: WAN-IN-6
+            description: Example for secshellnet/ansible-vyos-validator
+            default_action: drop
+            enable_default_log: true
+            rules:
+              - number: 6
+                action: accept
+                state:
+                  established: true
+                  related: true
+
+              - number: 7
+                action: accept
+                protocol: icmpv6
+
+              ### FIREWALL RULES ###
+              - number: 100
+                action: accept
+                destination:
+                  address: fd00:1234:AAAA:BBBB:CCCC:DDDD::/128
+                  port: 1234
+                protocol: tcp

@@ -1,0 +1,79 @@
+---
+- hosts: all
+  gather_facts: false
+  vars:
+    site: "{{ inventory_hostname }}"
+  # bugfix for weird errors, see https://github.com/ansible/ansible/issues/67497#issuecomment-595054549
+  environment:
+    ANSIBLE_VYOS_TERMINAL_LENGTH: 0
+  tasks:
+    - name: "bugfix for weird errors"
+      vyos.vyos.vyos_command:
+        commands:
+          - set terminal length 0
+
+    # Firewall Groups (for example: NET-PRIVATE)
+    - include_tasks: "tasks/fw-grp-v4.yml"
+      ignore_errors: true
+    - include_tasks: "tasks/fw-grp-v6.yml"
+      ignore_errors: true
+
+    # Local Firewall Rules
+    - include_tasks: "tasks/fw-local-v4.yml"
+      ignore_errors: true
+    - include_tasks: "tasks/fw-local-v6.yml"
+      ignore_errors: true
+    - include_tasks: "tasks/fw-bgp-local-v4.yml"
+      ignore_errors: true
+    - include_tasks: "tasks/fw-bgp-local-v6.yml"
+      ignore_errors: true
+
+    # Internal Firewall Rules (Site to Site)
+    - include_tasks: "tasks/fw-wg-internal-v4.yml"
+      ignore_errors: true
+    - include_tasks: "tasks/fw-wg-internal-v6.yml"
+      ignore_errors: true
+
+    # External Firewall Rules (WAN to Site)
+    - include_tasks: "tasks/{{ site }}/fw-{{ site }}-wan-v4.yml"
+      ignore_errors: true
+    - include_tasks: "tasks/{{ site }}/fw-{{ site }}-wan-v6.yml"
+      ignore_errors: true
+
+    # Road Warrior Firewall Rules (VPN to Site)
+    - include_tasks: "tasks/{{ site }}/fw-{{ site }}-wg100-v4.yml"
+      ignore_errors: true
+    - include_tasks: "tasks/{{ site }}/fw-{{ site }}-wg100-v6.yml"
+      ignore_errors: true
+
+    # VLANxxx-IN Firewall Rules (can be configured in host_vars)
+    - ansible.builtin.include_tasks: tasks/fw-vlanxxx-v4.yml
+      loop: "{{ fw_ruleset_vlanxxx.keys()|list|reject('search', 'all') }}"
+      loop_control:
+        loop_var: ruleset
+      ignore_errors: true
+      when: fw_ruleset_vlanxxx
+
+    # VLANxxx-IN-6 Firewall Rules (can be configured in host_vars)
+    - ansible.builtin.include_tasks: tasks/fw-vlanxxx-v6.yml
+      loop: "{{ fw_ruleset_vlanxxx6.keys()|list|reject('search', 'all6') }}"
+      loop_control:
+        loop_var: ruleset
+      ignore_errors: true
+      when: fw_ruleset_vlanxxx6
+
+    # Configure prefix lists for bgp neighbors
+    - include_tasks: "tasks/prefix-lists-v4.yml"
+      ignore_errors: true
+    - include_tasks: "tasks/prefix-lists-v6.yml"
+      ignore_errors: true
+
+    # Configure syslog logging
+    - include_tasks: "tasks/logging.yml"
+      ignore_errors: true
+
+    # Remove post-login banner
+    - name: remove the post-login banner
+      vyos.vyos.vyos_banner:
+        banner: post-login
+        state: absent

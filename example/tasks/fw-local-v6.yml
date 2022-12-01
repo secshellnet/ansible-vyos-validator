@@ -1,0 +1,28 @@
+---
+- name: "Configure local firewall ruleset (ipv6)"
+  vyos.vyos.vyos_firewall_rules:
+    state: replaced
+    config:
+      - afi: ipv6
+        rule_sets:
+          - name: LOCAL-6
+            description: Example for secshellnet/ansible-vyos-validator
+            default_action: drop
+            enable_default_log: true
+            rules:
+              - number: 6
+                action: accept
+                state:
+                  established: true
+                  related: true
+
+              - number: 8
+                action: accept
+                protocol: icmpv6
+
+              - number: 10
+                action: accept
+                description: dns
+                destination:
+                  port: 53
+                protocol: udp

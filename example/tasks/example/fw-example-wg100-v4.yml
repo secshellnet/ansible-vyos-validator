@@ -1,0 +1,32 @@
+---
+- name: "Configure wg100 firewall ruleset (ipv4)"
+  vyos.vyos.vyos_firewall_rules:
+    state: replaced
+    config:
+      - afi: ipv4
+        rule_sets:
+          - name: WG100-IN
+            description: Example for secshellnet/ansible-vyos-validator
+            default_action: reject
+            enable_default_log: true
+            rules:
+              - number: 5
+                action: accept
+                destination:
+                  group:
+                    network_group: "!NET-PRIVATE"
+
+              - number: 6
+                action: accept
+                state:
+                  established: true
+                  related: true
+
+              ### FIREWALL RULES ###
+              # for all users of the vpn
+              - number: 100
+                action: accept
+                destination:
+                  address: "{{ v4.example.app2 + '/32' }}"
+                  port: 443
+                protocol: tcp

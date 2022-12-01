@@ -1,0 +1,13 @@
+---
+- name: "Configuration syslog"
+  vyos.vyos.vyos_logging_global:
+    state: merged
+    config:
+      hosts:
+        - hostname: logging.domain.de
+          port: 1514
+          facilities:
+            - facility: all
+              severity: debug
+              protocol: udp
+
