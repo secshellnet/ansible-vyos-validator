@@ -1,14 +1,16 @@
 import yaml
+from re import finditer
+from json import dumps
 
 try:
     from yaml import CLoader as Loader
 except ImportError:
     from yaml import Loader
 
-from common import check_duplicate_numbers, check_firewall_rule
+from common import check_rules_of_ruleset
 
 
-def check_ruleset(ruleset, file_infos, afi) -> int:
+def check_ruleset(ruleset, file_infos, afi, valid_hosts) -> int:
     fail = 0
     if (name := ruleset.get("name")) is None:
         print(f'  Invalid "ruleset"={name}')
@@ -31,15 +33,12 @@ def check_ruleset(ruleset, file_infos, afi) -> int:
     # handle VLANxxx-IN interfaces (dynamic configured using host_vars)
     if isinstance(rules, str):
         return fail
-    fail += check_duplicate_numbers(name, rules)
-    if name.startswith("WG100-IN"):
-        for rule in rules:
-            fail += check_firewall_rule(file_infos["site"], afi, name, rule)
+    fail += check_rules_of_ruleset(file_infos, afi, name, rules, valid_hosts)
     return fail
 
 
 # https://docs.ansible.com/ansible/latest/collections/vyos/vyos/vyos_firewall_rules_module.html
-def check_fw_rules(file_infos, json: dict) -> int:
+def check_fw_rules(file_infos, valid_hosts, json: dict) -> int:
     fail = 0
     # check which state the action should use (only one per step)
     if (state := json.get("state")) is None or \
@@ -64,7 +63,7 @@ def check_fw_rules(file_infos, json: dict) -> int:
             print('  "rule_sets" not found')
             return fail
         for ruleset in rule_sets:
-            fail += check_ruleset(ruleset, file_infos, afi)
+            fail += check_ruleset(ruleset, file_infos, afi, valid_hosts)
     return fail
 
 
@@ -79,7 +78,16 @@ def check_logging(file_infos, json: dict) -> int:
 
 
 # https://docs.ansible.com/ansible/latest/collections/vyos/vyos/vyos_config_module.html
-def check_generic_commands(file_infos, json: dict) -> int:
+def check_generic_commands(file_infos, json: dict, valid_hosts: list[str]) -> int:
+    fail = 0
+    for m in finditer(r"set nat destination rule \d* translation address {{ (.*?) }}", dumps(json)):
+        g = m.groups()[0]
+        if not g:
+            print("  \"\" as nat destination is invalid!")
+            fail += 1
+        elif g not in valid_hosts:
+            print(f"  \"{g}\" as nat destination is not in valid hosts!")
+            fail += 1
     return 0
 
 
@@ -88,12 +96,13 @@ def check_fw_global(file_infos, json: dict) -> int:
     return 0
 
 
-def check(file_infos) -> int:
+def check(file_infos, valid_hosts, **kwargs) -> int:
     """
-    Method to check files in the tasks directory, these contain all firewall
+    Method to check files in the tasks' directory, these contain all firewall
      rules except for the VLANxxx-IN rulesets, which are using by the wireguard
      client peer interfaces (wg100).
     :param file_infos: infos for file to check
+    :param valid_hosts: all hosts which are allowed in jinja patterns
     :return: a boolean which indicates whether this validator has found any issues
               (True means no issues found, False indicates that we found issues)
     """
@@ -111,7 +120,7 @@ def check(file_infos) -> int:
     #  - vyos_firewall_global (to set static firewall groups)
     for dictio in json:
         if rules := dictio.get("vyos.vyos.vyos_firewall_rules"):
-            fail += check_fw_rules(file_infos, rules)
+            fail += check_fw_rules(file_infos, valid_hosts, rules)
         elif rules := dictio.get("vyos.vyos.vyos_firewall_global"):
             fail += check_fw_global(file_infos, rules)
         elif rules := dictio.get("vyos.vyos.vyos_prefix_lists"):
@@ -119,5 +128,5 @@ def check(file_infos) -> int:
         elif rules := dictio.get("vyos.vyos.vyos_logging_global"):
             fail += check_logging(file_infos, rules)
         elif rules := dictio.get("vyos.vyos.vyos_config"):
-            fail += check_generic_commands(file_infos, rules)
+            fail += check_generic_commands(file_infos, rules, valid_hosts)
     return fail
