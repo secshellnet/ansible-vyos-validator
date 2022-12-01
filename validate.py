@@ -26,7 +26,7 @@ def check_file(file_infos, file, p) -> int:
         name = prog.name.rstrip('.py')
         module = __import__(f"{parent.name}.{name}")
         if getattr(getattr(module, name), "check", None):
-            fail += getattr(module, name).check(file_infos)
+            fail += getattr(module, name).check(file_infos, valid_hosts)
     return fail
 
 
@@ -108,4 +108,4 @@ if __name__ == '__main__':
     num_errors = main()
     print(f"\nWe found a total of {num_errors} errors!!!")
     # use the exit status to indicate whether the validator found issues
-    exit(max(1, num_errors))
+    exit(min(1, num_errors))
