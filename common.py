@@ -38,7 +38,7 @@ def check_cidr(cidr: str, cidr_max: int) -> int:
     Method to validate that a netmask in cidr notation is valid
     :param cidr: the string that has been configured as netmask
     :param cidr_max: the maximum value for the netmask (32 for ipv4, 128 for ipv6)
-    :return: 1 if there is a cidr is not valid, 0 if the cidr is valid (TODO think about using a boolean?)
+    :return: 1 if there is a cidr is not valid, 0 if the cidr is valid
     """
     if not cidr.isnumeric():
         print(f"  Invalid netmask = {cidr}")
@@ -53,10 +53,8 @@ def check_ipv4(ip: str) -> int:
     """
     Method to validate that a ipv4 address is valid
     :param ip: the configured ipv4 address
-    :return: 1 if there is a ipv4 address is not valid, 0 if the ipv4 address is valid (TODO think about using a boolean?)
+    :return: 1 if there is a ipv4 address is not valid, 0 if the ipv4 address is valid
     """
-    # TODO isn't fail always 0 ? remove variable if not needed
-    fail = 0
     blocks = ip.split(".")
     if len(blocks) != 4:
         print(f"  Invalid ipv4 address = {ip} (amount of octets)")
@@ -68,14 +66,14 @@ def check_ipv4(ip: str) -> int:
         if not 0 <= int(block) <= 255:
             print(f"  Invalid ipv4 address = {ip} (octet > 255)")
             return 1
-    return fail
+    return 0
 
 
 def check_ipv6(ip: str) -> int:
     """
     Method to validate that a ipv6 address is valid
     :param ip: the configured ipv6 address
-    :return: 1 if there is a ipv6 address is not valid, 0 if the ipv6 address is valid (TODO think about using a boolean?)
+    :return: 1 if there is a ipv6 address is not valid, 0 if the ipv6 address is valid
     """
     allowed_chars = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f"}
     blocks = list(filter(None, ip.split(":")))
