@@ -183,8 +183,6 @@ def check_source_group(site: str, afi: str, source_group_name: dict, rule_number
     :return: an int which indicates whether this validator has found any issues
               (0 means no issues found, 1 indicates that we found issues)
     """
-    if site == "pve3":
-        return 0
     if (afi, site) not in saved_names:
         if afi == "ipv4":
             resp = requests.get(f"https://wpm.general.{site}.secshell.net/manage/vyoscli/vpn-source-groups")
