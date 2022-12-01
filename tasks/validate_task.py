@@ -11,6 +11,15 @@ from common import check_rules_of_ruleset
 
 
 def check_ruleset(ruleset, file_infos, afi, valid_hosts) -> int:
+    """
+    Method to validate a ruleset
+    :param ruleset: 
+    :param file_infos: a dictionary with informations regarding the file that is being validated
+                       contains for example the site on which the playbook is being ran
+    :param afi: the address family of the ruleset (ipv4 or ipv6)
+    :param valid_hosts: ???
+    :return: the amount of failed checks
+    """
     fail = 0
     if (name := ruleset.get("name")) is None:
         print(f'  Invalid "ruleset"={name}')
@@ -30,7 +39,7 @@ def check_ruleset(ruleset, file_infos, afi, valid_hosts) -> int:
     # TODO for rest
     if not rules:
         return fail
-    # handle VLANxxx-IN interfaces (dynamic configured using host_vars)
+    # handle VLANxxx-IN rulesets (dynamic configured using host_vars)
     if isinstance(rules, str):
         return fail
     fail += check_rules_of_ruleset(file_infos, afi, name, rules, valid_hosts)
@@ -39,6 +48,14 @@ def check_ruleset(ruleset, file_infos, afi, valid_hosts) -> int:
 
 # https://docs.ansible.com/ansible/latest/collections/vyos/vyos/vyos_firewall_rules_module.html
 def check_fw_rules(file_infos, valid_hosts, json: dict) -> int:
+    """
+    Method to validate a ruleset
+    :param file_infos: a dictionary with informations regarding the file that is being validated
+                       contains for example the site on which the playbook is being ran
+    :param valid_hosts: ???
+    :param json: the configuration data
+    :return: the amount of failed checks
+    """
     fail = 0
     # check which state the action should use (only one per step)
     if (state := json.get("state")) is None or \
