@@ -7,7 +7,7 @@ try:
 except ImportError:
     from yaml import Loader
 
-from common import check_duplicate_numbers, check_rules_of_ruleset
+from common import check_rules_of_ruleset
 
 
 def check_ruleset(ruleset, file_infos, afi, valid_hosts) -> int:
@@ -83,7 +83,7 @@ def check_generic_commands(file_infos, json: dict, valid_hosts: list[str]) -> in
     for m in finditer(r"set nat destination rule \d* translation address {{ (.*?) }}", dumps(json)):
         g = m.groups()[0]
         if not g:
-            print(f"  \"\" as nat destination is invalid!")
+            print("  \"\" as nat destination is invalid!")
             fail += 1
         elif g not in valid_hosts:
             print(f"  \"{g}\" as nat destination is not in valid hosts!")
