@@ -1,0 +1,80 @@
+---
+- name: "Configure internal wireguard firewall ruleset (ipv4)"
+  vyos.vyos.vyos_firewall_rules:
+    state: replaced
+    config:
+      - afi: ipv4
+        rule_sets:
+          - name: WG-INTERNAL-IN
+            description: Example for secshellnet/ansible-vyos-validator
+            default_action: reject
+            enable_default_log: true
+            rules:
+              - number: 5
+                action: accept
+                destination:
+                  group:
+                    network_group: "!NET-PRIVATE"
+
+              - number: 6
+                action: accept
+                state:
+                  established: true
+                  related: true
+
+              ### GLOBAL FIREWALL RULES (any to specific) ###
+              - number: 100
+                action: accept
+                description: dns to example
+                destination:
+                  address: "{{ v4.example.vyos + '/32' }}"
+                  port: 53
+                protocol: udp
+
+              - number: 101
+                action: accept
+                description: dns to external
+                destination:
+                  address: "{{ v4.external.vyos + '/32' }}"
+                  port: 53
+                protocol: udp
+
+              ### FIREWALL RULES (specific to specific) ###
+              - number: 200
+                action: accept
+                destination:
+                  address: "{{ v4.example.app1 + '/32' }}"
+                  port: 1234
+                source:
+                  address: "{{ v4.external.app1 + '/32' }}"
+                protocol: tcp
+
+              - number: 201
+                action: accept
+                description: Irrelevant
+                destination:
+                  address: "{{ v4.example.app3 + '/32' }}"
+                  port: 1234
+                source:
+                  address: "{{ v4.external.app2 + '/32' }}"
+                protocol: tcp
+
+              - number: 202
+                action: accept
+                destination:
+                  address: "{{ v4.external.test + '/32' }}"
+                  port: 1234
+                source:
+                  address: "{{ v4.example.app2 + '/32' }}"
+                protocol: tcp
+
+              ### HIGH PRIVILEGED ADMIN NETWORKS (specific to any) ###
+              - number: 300
+                action: accept
+                source:
+                  address: "{{ v4.external_vpn }}"
+
+              - number: 301
+                action: accept
+                source:
+                  address: "{{ v4.example_vpn }}"

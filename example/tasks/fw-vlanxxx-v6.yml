@@ -1,0 +1,16 @@
+---
+- name: "Configure {{ ruleset | replace('_', '-') | replace('IN6', 'IN-6') }} firewall ruleset (ipv6)"
+  vyos.vyos.vyos_firewall_rules:
+    state: replaced
+    config:
+      - afi: ipv6
+        rule_sets:
+          - name: "{{ ruleset | replace('_', '-') | replace('IN6', 'IN-6') }}"
+            description: Example for secshellnet/ansible-vyos-validator
+            default_action: reject
+            enable_default_log: true
+            rules: "{{ rules }}"
+  vars:
+    # merge lists of provided firewall rules (site specific and vlan specific, vlan specific rules are prioritised)
+    rules: "{{ [fw_ruleset_vlanxxx6.all6, fw_ruleset_vlanxxx6[ruleset] or [] ]|
+               community.general.lists_mergeby('number', recursive=true, list_merge='append_rp') }}"

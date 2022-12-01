@@ -1,0 +1,58 @@
+---
+- name: "Configure prefix lists (ipv6)"
+  vyos.vyos.vyos_prefix_lists:
+    state: replaced
+    config:
+      - afi: "ipv6"
+        prefix_lists:
+          - name: groupA-groupB-6
+            description: Example for secshellnet/ansible-vyos-validator
+
+          - name: groupB-groupA-6
+            description: Example for secshellnet/ansible-vyos-validator
+            entries:
+              - sequence: 10
+                description: "Allow to announce their subnet"
+                action: permit
+                prefix: fd00:/52
+                le: 128
+              - sequence: 11
+                description: "Allow to announce their additional subnet"
+                action: permit
+                prefix: fd00:/52
+                le: 128
+              - sequence: 12
+                description: "Allow to announce their delegated prefix"
+                action: permit
+                prefix: fd00:/52
+                le: 128
+              - sequence: 100
+                action: deny
+                prefix: ::/0
+                le: 128
+
+          - name: groupA-groupC-6
+            description: Example for secshellnet/ansible-vyos-validator
+            entries:
+              - sequence: 10
+                description: "Allow the announcement of the delegated prefix"
+                action: permit
+                prefix: fd00:/52
+                le: 128
+              - sequence: 100
+                action: deny
+                prefix: ::/0
+                le: 128
+
+          - name: groupC-groupA-6
+            description: Example for secshellnet/ansible-vyos-validator
+            entries:
+              - sequence: 10
+                description: "Allow the announcement of the delegated prefix"
+                action: permit
+                prefix: fd00:/52
+                le: 128
+              - sequence: 100
+                action: deny
+                prefix: ::/0
+                le: 128

@@ -1,0 +1,36 @@
+---
+- name: "Configure prefix lists (ipv4)"
+  vyos.vyos.vyos_prefix_lists:
+    state: replaced
+    config:
+      - afi: "ipv4"
+        prefix_lists:
+          - name: groupA-groupB
+            description: Example for secshellnet/ansible-vyos-validator
+            entries:
+
+          - name: groupB-groupA
+            description: Example for secshellnet/ansible-vyos-validator
+            entries:
+              - sequence: 10
+                description: "Allow not4y to announce their ipv4 subnet"
+                action: permit
+                prefix: 10.99.0.0/16
+                le: 32
+              - sequence: 100
+                action: deny
+                prefix: 0.0.0.0/0
+                le: 32
+
+          - name: groupA-groupC
+            description: Example for secshellnet/ansible-vyos-validator
+            entries:
+              # deny all ipv4 announcements, due to ipv4 source (masquerade) nat
+              - sequence: 100
+                action: deny
+                prefix: 0.0.0.0/0
+                le: 32
+
+          - name: groupC-groupA
+            description: Example for secshellnet/ansible-vyos-validator
+            entries:

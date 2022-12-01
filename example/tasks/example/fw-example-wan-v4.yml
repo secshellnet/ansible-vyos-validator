@@ -1,0 +1,39 @@
+---
+- name: Configure destination nat
+  vyos.vyos.vyos_config:
+    save: true
+    match: none
+    lines:
+      - "delete nat destination rule"
+
+      - "set nat destination rule 100 destination port 1234"
+      - "set nat destination rule 100 inbound-interface eth0"
+      - "set nat destination rule 100 protocol tcp"
+      - "set nat destination rule 100 translation address {{ v4.example.app1 }}"
+
+
+
+- name: "Configure wan firewall ruleset (ipv4)"
+  vyos.vyos.vyos_firewall_rules:
+    state: replaced
+    config:
+      - afi: ipv4
+        rule_sets:
+          - name: WAN-IN
+            description: Example for secshellnet/ansible-vyos-validator
+            default_action: drop
+            enable_default_log: true
+            rules:
+              - number: 6
+                action: accept
+                state:
+                  established: true
+                  related: true
+
+              ### FIREWALL RULES ###
+              - number: 100
+                action: accept
+                destination:
+                  address: "{{ v4.example.app1 + '/32' }}"
+                  port: 1234
+                protocol: tcp
