@@ -46,7 +46,7 @@
                   address: "{{ v4.example.app1 + '/32' }}"
                   port: 1234
                 source:
-                  address: "{{ v4.external.app1 + '/32' }}"
+                  address: "{{ v4.external.ctrl + '/32' }}"
                 protocol: tcp
 
               - number: 201
@@ -56,7 +56,7 @@
                   address: "{{ v4.example.app3 + '/32' }}"
                   port: 1234
                 source:
-                  address: "{{ v4.external.app2 + '/32' }}"
+                  address: "{{ v4.external.test + '/32' }}"
                 protocol: tcp
 
               - number: 202

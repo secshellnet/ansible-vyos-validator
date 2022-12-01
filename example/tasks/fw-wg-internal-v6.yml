@@ -46,17 +46,17 @@
                   address: "{{ v6.example.app1.host + '/128' }}"
                   port: 1234
                 source:
-                  address: "{{ v6.external.app1.host + '/128' }}"
+                  address: "{{ v6.external.test.host + '/128' }}"
                 protocol: tcp
 
               - number: 201
                 action: accept
                 description: Irrelevant
                 destination:
-                  address: "{{ v6.example.app3.host + '/128' }}"
+                  address: "{{ v6.example.app1.host + '/128' }}"
                   port: 1234
                 source:
-                  address: "{{ v6.external.app2.host + '/128' }}"
+                  address: "{{ v6.external.ctrl.host + '/128' }}"
                 protocol: tcp
 
               - number: 202

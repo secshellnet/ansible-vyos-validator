@@ -56,7 +56,7 @@ fw_ruleset_vlanxxx6:
     - number: 100
       action: accept
       destination:
-        address: "{{ v6.example.app2.adr3 + '/128' }}"
+        address: "{{ v6.example.app2.apps + '/128' }}"
         port: 1234
       protocol: tcp
 
