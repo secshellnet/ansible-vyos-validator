@@ -16,6 +16,8 @@ inside one ruleset (which would overwrite the first one).
 
 Thank you [@TheCataliasTNT2k](https://github.com/thecataliastnt2k) for the python implementation of this project.
 
+Checkout the second (dynamic) part of our ci [github.com/secshellnet/woodpecker-ansible-vyos-ci](https://github.com/secshellnet/woodpecker-ansible-vyos-ci)
+
 ## How we did it before
 Until we decided to build this tool, we used the following bash scripts to verify the changes are ok:
 ```shell
