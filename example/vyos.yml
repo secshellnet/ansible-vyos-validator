@@ -12,10 +12,8 @@
         commands:
           - set terminal length 0
 
-    # Firewall Groups (for example: NET-PRIVATE)
-    - include_tasks: "tasks/fw-grp-v4.yml"
-      ignore_errors: true
-    - include_tasks: "tasks/fw-grp-v6.yml"
+    # Firewall Groups (for example: NET-PRIVATE, NET-GITHUB, NET-CLOUDFLARE-6)
+    - include_tasks: "tasks/fw-grp.yml"
       ignore_errors: true
 
     # Local Firewall Rules
@@ -68,7 +66,11 @@
     - include_tasks: "tasks/prefix-lists-v6.yml"
       ignore_errors: true
 
-    # Configure syslog logging
+    # Configure syslog logging (TODO broken for VyOS 1.3)
+    #   set system syslog host graylog.log.pve3.secshell.net facility all level debug protocol udp
+    # SHOULD BE
+    #   set system syslog host graylog.log.pve3.secshell.net facility all protocol udp
+    #   set system syslog host graylog.log.pve3.secshell.net facility all level debug
     - include_tasks: "tasks/logging.yml"
       ignore_errors: true
 

@@ -1,0 +1,51 @@
+---
+- name: "Configure static firewall groups (e.g. NET-PRIVATE)"
+  vyos.vyos.vyos_firewall_global:
+    state: merged
+    config:
+      group:
+        network_group:
+          - name: "NET-PRIVATE"
+            afi: ipv4
+            description: "bogon prefixes"
+            members:
+              - address: "0.0.0.0/8"
+              - address: "10.0.0.0/8"
+              - address: "172.16.0.0/12"
+              - address: "127.0.0.0/8"
+              - address: "169.254.0.0/16"
+              - address: "192.0.2.0/24"
+              - address: "192.88.99.0/24"
+              - address: "192.168.0.0/16"
+              - address: "198.18.0.0/15"
+              - address: "198.51.100.0/24"
+              - address: "203.0.113.0/24"
+              - address: "240.0.0.0/4"
+
+          - name: "NET-PRIVATE-6"
+            afi: ipv6
+            description: "ipv6 bogon prefixes"
+            members:
+              - address: "fc00::/7"
+              - address: "::/8"
+              - address: "0100::/64"
+              - address: "2001:2::/48"
+              - address: "2001:10::/28"
+              - address: "2001:db8::/32"
+              - address: "2002::/16"
+              - address: "3ffe::/16"
+              - address: "fe80::/10"
+              - address: "fec0::/10"
+              - address: "ff00::/8"
+
+- name: "Generate dynamic firewall groups (e.g. NET-GITHUB, NET-CLOUDFLARE-6, NET-GOOGLE)"
+  ansible.builtin.shell: python3 dynamic-network-groups.py
+  register: dynamic_network_groups
+  run_once: true
+
+- name: "Configure dynamic firewall groups (e.g. NET-GITHUB, NET-CLOUDFLARE-6, NET-GOOGLE)"
+  vyos.vyos.vyos_firewall_global:
+    state: merged
+    config:
+      group:
+        network_group: "{{ dynamic_network_groups.stdout | from_json }}"
